@@ -3,16 +3,25 @@ document.addEventListener("DOMContentLoaded", function () {
   const roomurlelem = document.querySelector("#room-url");
   const screenselem = document.querySelector("#screens");
 
-  function generateRoomURL(id) {
-    return url + "?" + id;
+  function parseQueryString(query) {
+    let obj = {};
+    query.split("&").forEach(function (s) {
+      let kv = s.split("=");
+      obj[kv[0]] = kv[1];
+    });
+    return obj;
   }
 
-  function displayRoomURL(id) {
-    roomurlelem.innerText = generateRoomURL(id);
+  function generateRoomURL(id, pass) {
+    return url + "?id=" + id + "&pass=" + pass;
   }
 
-  function getIdFromURL() {
-    return document.location.search.substring(1);
+  function displayRoomURL(id, pass) {
+    roomurlelem.innerText = generateRoomURL(id, pass);
+  }
+
+  function getQuery() {
+    return parseQueryString(document.location.search.substring(1));
   }
 
   function getScreen() {
@@ -58,10 +67,6 @@ document.addEventListener("DOMContentLoaded", function () {
   let idelem = document.querySelector("#peer-id");
   let statuselem = document.querySelector("#status-menu");
 
-  function updateIdElem(id) {
-    // idelem.innerText = id;
-  };
-
   function updateStatus(s) {
     let msg = document.createElement("p");
     msg.innerText = s;
@@ -75,16 +80,21 @@ document.addEventListener("DOMContentLoaded", function () {
   let screens = {};
   let calls = {};
   let screen = null;
+  let pass = "";
 
   function propagateToConnections(id) {
     Object.values(connections).forEach(function (anotherconn) {
-      anotherconn.send({type: "another-peer", peer: id});
+      if (anotherconn.authorized) {
+        anotherconn.send({type: "another-peer", peer: id});
+      }
     });
   }
 
   function shareScreenToConnections(peer, screen) {
     Object.values(connections).forEach(function (c) {
-      peer.call(c.peer, screen);
+      if (c.authorized) {
+        peer.call(c.peer, screen);
+      }
     });
   }
 
@@ -102,15 +112,28 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function connectDataPeer(peer, id) {
+  function connectDataPeer(peer, id, pass) {
     if (peer.id === id) return;
     if (id in connections) return;
-    connections[id] = peer.connect(id, {reliable: false});
-    connections[id].on('data', function (data) {
-      if (data.type === "stop-sharing" || data.type === "close") {
+    let c = peer.connect(id, {reliable: false});
+    connections[id] = c;
+    c.on('open', function (c) {
+      connections[id].send({type: "authorize", pass: pass});
+    });
+    c.on('data', function (data) {
+      console.log(data);
+      if (data.type === "authorize") {
+        if (data.pass === pass) {
+          c.authorized = true;
+          shareScreenIfStarting(peer, c.peer, screen);
+          updateStatus("ID:" + c.peer + "は認証に成功しました");
+        } else {
+          updateStatus("ID:" + c.peer + "は認証に失敗しました");
+        }
+      } else if (data.type === "stop-sharing" || data.type === "close") {
         stopSharing(data);
       } else if (data.type === "another-peer") {
-        connectDataPeer(peer, data.peer);
+        connectDataPeer(peer, data.peer, pass);
         shareScreenIfStarting(peer, data.peer, screen);
       } else if (data.type === "name") {
         connections[id].name = data.name;
@@ -121,8 +144,6 @@ document.addEventListener("DOMContentLoaded", function () {
   function createUserPeer() {
     let peer = new Peer({});
     peer.on('open', function (id) {
-      displayRoomURL(peer.id);
-      updateIdElem(peer.id);
       updateStatus("接続を待機しています");
     });
     peer.on('connection', function (c) {
@@ -130,16 +151,26 @@ document.addEventListener("DOMContentLoaded", function () {
       Object.values(connections).forEach(function (anotherconn) {
         c.send({type: "another-peer", peer: anotherconn.peer});
       });
-      shareScreenIfStarting(peer, c.peer, screen);
+      // shareScreenIfStarting(peer, c.peer, screen);
 
+      connections[c.peer] = c;
+      connections[c.peer].authorized = false;
+      propagateToConnections(c.peer);
       c.on('data', function (data) {
-        if (data.type === "stop-sharing" || data.type === "close") {
+        console.log(data);
+        if (data.type === "authorize") {
+          if (data.pass === pass) {
+            connections[c.peer].authorized = true;
+            connections[c.peer].send({type: "authorize", pass: pass});
+            shareScreenIfStarting(peer, c.peer, screen);
+            updateStatus("ID:" + c.peer + "は認証に成功しました");
+          } else {
+            updateStatus("ID:" + c.peer + "は認証に失敗しました");
+          }
+        } else if (data.type === "stop-sharing" || data.type === "close") {
           stopSharing(data);
         }
       });
-
-      connections[c.peer] = c;
-      propagateToConnections(c.peer);
     });
 
     peer.on('disconnected', function () {
@@ -156,7 +187,9 @@ document.addEventListener("DOMContentLoaded", function () {
     peer.on('call', function(call) {
       call.answer();
       call.on('stream', function (screen) {
-        addScreen(call.peer, screen);
+        if (connections[call.peer].authorized) {
+          addScreen(call.peer, screen);
+        }
       });
     });
 
@@ -170,10 +203,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let peer = createUserPeer();
   peer.on('open', function () {
-    let idfromurl = getIdFromURL();
-    if (idfromurl !== "") {
-      connectDataPeer(peer, idfromurl);
+    let query = getQuery();
+    if ('pass' in query) {
+      pass = query.pass;
+    } else {
+      pass = "";
     }
+    if ('id' in query) {
+      connectDataPeer(peer, query.id, pass);
+    }
+    displayRoomURL(peer.id, pass);
   });
 
   document.querySelector("#copy-url").addEventListener("click", function (e) {
