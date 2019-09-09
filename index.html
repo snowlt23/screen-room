@@ -3,9 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Screen Room</title>
-  <script src="peerjs.min.js"></script>
-  <!-- <script src="https://unpkg.com/peerjs@1.0.0/dist/peerjs.min.js"></script> -->
-  <script src="app.js"></script>
 
   <style>
     body {
@@ -16,60 +13,32 @@
     }
     #room-menu {
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
+      flex-direction: column;
+      align-items: center;
       width: 100%;
-      background: #2060d8;
+      height: 100vh;
       font-size: 1.1em;
-    }
-    #room-menu div {
-      margin: 0.3em;
-    }
-
-    #status-menu {
-      margin: 1em;
-      position: fixed;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    #status-menu p {
-      color: #252525;
-      background: #f0f0f0;
-      margin: 1em;
-      padding: 0.8em;
-      border-radius: 1em;
-    }
-
-    #screens {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    #screens video {
-      margin: 1%;
-      width: 95%;
     }
   </style>
 </head>
 
 <body>
   <div id="room-menu">
-    <div>Room URL:
-      <span id="room-url"></span>
-      <button id="copy-url">URLのコピー</button>
-    </div>
+    <h1>Screen Room</h1>
     <div>
-      <button id="start-sharing">画面共有を開始</button>
-      <button id="stop-sharing">画面共有を停止</button>
+      パスワード:
+      <input type="text" id="pass" />
+      <button id="create-room">部屋を作る</button>
     </div>
   </div>
-  <div id="status-menu">
-  </div>
-  <div id="screens"></div>
+
+  <script>
+document.querySelector("#create-room").addEventListener("click", function (e) {
+	let pass = document.querySelector("#pass").value;
+  window.location = "/room.html?pass=" + pass;
+});
+  </script>
 </body>
 
 </html>

@@ -1,5 +1,14 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const url = "C:/Users/shsno/github/screen-room/index.html";
+	function getCurrentDomain() {
+		let loc = window.location.href;
+		if (loc.startsWith("https://")) {
+			return "https://" + loc.replace("https://", "").split("/")[0];
+		} else {
+			return "http://" + loc.replace("http://", "").split("/")[0];
+		}
+	}
+
+  const url = getCurrentDomain() + "/room.html";
   const roomurlelem = document.querySelector("#room-url");
   const screenselem = document.querySelector("#screens");
 
