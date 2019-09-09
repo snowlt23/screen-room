@@ -1,11 +1,11 @@
 document.addEventListener("DOMContentLoaded", function () {
 	function getCurrentDomain() {
-		let loc = window.location.href;
-		if (loc.startsWith("https://")) {
-			return "https://" + loc.replace("https://", "").split("/")[0];
-		} else {
-			return "http://" + loc.replace("http://", "").split("/")[0];
+		let dirs = window.location.href.split("/");
+		let s = dirs[0];
+		for (let i=1; i<dirs.length-1; i++) {
+			s += "/" + dirs[i];
 		}
+		return s;
 	}
 
   const url = getCurrentDomain() + "/room.html";
@@ -130,7 +130,6 @@ document.addEventListener("DOMContentLoaded", function () {
       connections[id].send({type: "authorize", pass: pass});
     });
     c.on('data', function (data) {
-      console.log(data);
       if (data.type === "authorize") {
         if (data.pass === pass) {
           c.authorized = true;
@@ -166,7 +165,6 @@ document.addEventListener("DOMContentLoaded", function () {
       connections[c.peer].authorized = false;
       propagateToConnections(c.peer);
       c.on('data', function (data) {
-        console.log(data);
         if (data.type === "authorize") {
           if (data.pass === pass) {
             connections[c.peer].authorized = true;

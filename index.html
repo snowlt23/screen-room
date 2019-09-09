@@ -36,7 +36,12 @@
   <script>
 document.querySelector("#create-room").addEventListener("click", function (e) {
 	let pass = document.querySelector("#pass").value;
-  window.location = "/room.html?pass=" + pass;
+	let dirs = window.location.href.split("/");
+	let s = dirs[0];
+	for (let i=1; i<dirs.length-1; i++) {
+		s += "/" + dirs[i];
+	}
+	window.location = s + "/room.html?pass=" + pass;
 });
   </script>
 </body>
