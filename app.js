@@ -11,6 +11,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const url = getCurrentDomain() + "/room.html";
   const roomurlelem = document.querySelector("#room-url");
   const screenselem = document.querySelector("#screens");
+  const qualityelem = document.querySelector("#quality");
+  const fpselem = document.querySelector("#fps");
 
   function parseQueryString(query) {
     let obj = {};
@@ -34,20 +36,19 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function getScreen() {
-    const constraints = {
-      video: {
-        width: {
-          max: 1280
-        },
-        height: {
-          max: 720
-        },
-        frameRate: 15
-      },
-      audio: false
-    }
+    const options = {
+      low: {width: {max: 1024}, height: {max: 576}},
+      mid: {width: {max: 1280}, height: {max: 720}},
+      high: {width: {max: 1920}, height: {max: 1080}},
+    };
+    const quality = qualityelem.options[qualityelem.selectedIndex].value;
+    const fps = parseInt(fpselem.options[fpselem.selectedIndex].value);
+    const videoopt = options[quality];
+    videoopt.frameRate = fps;
+
+    const constraints = {video: videoopt, audio: false};
     return navigator.mediaDevices.getDisplayMedia(constraints, function (scr) {
-      let track = MediaStream.getTracks()[0];
+      let track = scr.getTracks()[0];
       if ('contentHint' in track) {
         track.contentHint = 'text';
       }
@@ -68,6 +69,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   function removeScreen(id) {
     if (id in screens) {
+      let tracks = screens[id].srcObject.getTracks();
+      tracks.forEach(track => track.stop());
       screenselem.removeChild(screens[id]);
       delete screens[id];
     }

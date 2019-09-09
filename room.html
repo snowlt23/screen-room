@@ -23,6 +23,11 @@
     }
     #room-menu div {
       margin: 0.3em;
+      display: flex;
+      justify-content: center;
+    }
+    #room-menu div select {
+      margin: 0.2em;
     }
 
     #status-menu {
@@ -67,6 +72,19 @@
       <button id="copy-url">URLのコピー</button>
     </div>
     <div>
+      画質:
+      <select id="quality">
+        <option value="low">低</option>
+        <option value="mid" selected>中</option>
+        <option value="high">高</option>
+      </select>
+      FPS:
+      <select id="fps">
+        <option value="10">10</option>
+        <option value="15" selected>15</option>
+        <option value="20">20</option>
+        <option value="30">30</option>
+      </select>
       <button id="start-sharing">画面共有を開始</button>
       <button id="stop-sharing">画面共有を停止</button>
     </div>
