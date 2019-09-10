@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let screens = {};
   let screen = null;
   let pass = "";
-  let dataqueue = new Array();
+  let dataqueue = {};
 
   function propagateToConnections(id) {
     Object.values(connections).forEach(function (c) {
