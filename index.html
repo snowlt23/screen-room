@@ -29,12 +29,12 @@
     <div>
       パスワード:
       <input type="text" id="pass" />
-      <button id="create-room">部屋を作る</button>
+      <button id="hosting">ホストする</button>
     </div>
   </div>
 
   <script>
-document.querySelector("#create-room").addEventListener("click", function (e) {
+document.querySelector("#hosting").addEventListener("click", function (e) {
 	let pass = document.querySelector("#pass").value;
 	let dirs = window.location.href.split("/");
 	let s = dirs[0];
