@@ -161,9 +161,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     peer.on('connection', function (c) {
       updateStatus("ID:" + c.peer + "が接続しました");
-      Object.values(connections).forEach(function (anotherconn) {
-        c.send({type: "another-peer", peer: anotherconn.peer});
-      });
 
       connections[c.peer] = c;
       connections[c.peer].authorized = false;
@@ -174,6 +171,9 @@ document.addEventListener("DOMContentLoaded", function () {
           if (data.pass === pass) {
             connections[c.peer].authorized = true;
             connections[c.peer].send({type: "authorize", pass: pass});
+            Object.values(connections).forEach(function (anotherconn) {
+              c.send({type: "another-peer", peer: anotherconn.peer});
+            });
             shareScreenIfStarting(peer, c.peer, screen);
             updateStatus("ID:" + c.peer + "は認証に成功しました");
           } else {
