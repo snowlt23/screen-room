@@ -144,7 +144,9 @@ document.addEventListener("DOMContentLoaded", function () {
       } else if (data.type === "stop-sharing" || data.type === "close") {
         stopSharing(data);
       } else if (data.type === "another-peer") {
-        connectDataPeer(peer, data.peer, pass);
+        if (c.authorized) {
+          connectDataPeer(peer, data.peer, pass);
+        }
       } else if (data.type === "name") {
         connections[id].name = data.name;
       }
