@@ -127,12 +127,13 @@ document.addEventListener("DOMContentLoaded", function () {
   function connectDataPeer(peer, id, pass) {
     if (peer.id === id) return;
     if (id in connections) return;
-    let c = peer.connect(id, {reliable: false});
+    let c = peer.connect(id, {reliable: true});
     connections[id] = c;
     c.on('open', function (c) {
       connections[id].send({type: "authorize", pass: pass});
     });
     c.on('data', function (data) {
+      console.log(data);
       if (data.type === "authorize") {
         if (data.pass === pass) {
           c.authorized = true;
@@ -168,6 +169,7 @@ document.addEventListener("DOMContentLoaded", function () {
       connections[c.peer].authorized = false;
       propagateToConnections(c.peer);
       c.on('data', function (data) {
+        console.log(data);
         if (data.type === "authorize") {
           if (data.pass === pass) {
             connections[c.peer].authorized = true;
