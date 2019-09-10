@@ -1,4 +1,9 @@
 document.addEventListener("DOMContentLoaded", function () {
+
+  //
+  // url parser and generator
+  //
+
 	function getCurrentDomain() {
 		let dirs = window.location.href.split("/");
 		let s = dirs[0];
@@ -10,9 +15,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const url = getCurrentDomain() + "/room.html";
   const roomurlelem = document.querySelector("#room-url");
-  const screenselem = document.querySelector("#screens");
-  const qualityelem = document.querySelector("#quality");
-  const fpselem = document.querySelector("#fps");
 
   function parseQueryString(query) {
     let obj = {};
@@ -34,6 +36,14 @@ document.addEventListener("DOMContentLoaded", function () {
   function getQuery() {
     return parseQueryString(document.location.search.substring(1));
   }
+
+  //
+  // screen api
+  //
+
+  const screenselem = document.querySelector("#screens");
+  const qualityelem = document.querySelector("#quality");
+  const fpselem = document.querySelector("#fps");
 
   function getScreen() {
     const options = {
@@ -76,28 +86,35 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  let idelem = document.querySelector("#peer-id");
-  let statuselem = document.querySelector("#status-menu");
+  //
+  // message
+  //
 
-  function updateStatus(s) {
+  let messageelem = document.querySelector("#messages");
+
+  function notifyMessage(s) {
     let msg = document.createElement("p");
     msg.innerText = s;
-    statuselem.appendChild(msg);
+    messageelem.appendChild(msg);
     statustimeout = setTimeout(function() {
-      statuselem.removeChild(msg);
+      messageelem.removeChild(msg);
     }, 5000);
   }
 
+  //
+  // peer management
+  //
+
   let connections = {};
   let screens = {};
-  let calls = {};
   let screen = null;
   let pass = "";
+  let dataqueue = new Array();
 
   function propagateToConnections(id) {
-    Object.values(connections).forEach(function (anotherconn) {
-      if (anotherconn.authorized) {
-        anotherconn.send({type: "another-peer", peer: id});
+    Object.values(connections).forEach(function (c) {
+      if (c.authorized) {
+        c.send({type: "another-peer", peer: id});
       }
     });
   }
@@ -112,104 +129,114 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function shareScreenIfStarting(peer, id, screen) {
     if (screen !== null && screen.active) {
-      peer.call(id, screen);
+      if (connections[id].authorized) {
+        peer.call(id, screen);
+      }
     }
   }
 
   function stopSharing(data) {
-    removeScreen(data.peer);
-    if (data.type === "close") {
-      // connections[data.peer].close();
-      delete connections[data.peer];
+    if (connections[data.peer].authorized) {
+      removeScreen(data.peer);
+      if (data.type === "close") {
+        // connections[data.peer].close();
+        delete connections[data.peer];
+      }
+    }
+  }
+  
+  function readData(c, data) {
+    console.log(data);
+
+    // authorize
+    if (data.type === "authorize") {
+      if (c.authorized) return;
+      if (data.pass === pass) {
+        c.authorized = true;
+        c.send({type: "authorize", pass: pass});
+        notifyMessage("ID:" + c.peer + "は認証に成功しました");
+        propagateToConnections(c.peer);
+        shareScreenIfStarting(peer, c.peer, screen);
+        if (c.peer in dataqueue) {
+          dataqueue[c.peer].forEach(data => {
+            readData(c, data);
+          });
+          delete dataqueue[c.peer];
+        }
+      } else {
+        notifyMessage("ID:" + c.peer + "は認証に失敗しました");
+      }
+    }
+
+    // queueing when not authorized
+    if (!c.authorized) {
+      if (!(c.peer in dataqueue)) dataqueue[c.peer] = [];
+      dataqueue[c.peer].push(data);
+      return;
+    }
+
+    console.log("Authorized: " + JSON.stringify(data));
+    if (data.type === "stop-sharing" || data.type === "close") {
+      stopSharing(data);
+    } else if (data.type === "another-peer") {
+      connectDataChannel(peer, data.peer, pass);
     }
   }
 
-  function connectDataPeer(peer, id, pass) {
+  function connectDataChannel(peer, id, pass) {
     if (peer.id === id) return;
     if (id in connections) return;
     let c = peer.connect(id, {reliable: true});
     connections[id] = c;
-    c.on('open', function (c) {
-      connections[id].send({type: "authorize", pass: pass});
-    });
-    c.on('data', function (data) {
-      console.log(data);
-      if (data.type === "authorize") {
-        if (data.pass === pass) {
-          c.authorized = true;
-          shareScreenIfStarting(peer, c.peer, screen);
-          updateStatus("ID:" + c.peer + "は認証に成功しました");
-        } else {
-          updateStatus("ID:" + c.peer + "は認証に失敗しました");
-        }
-      } else if (data.type === "stop-sharing" || data.type === "close") {
-        stopSharing(data);
-      } else if (data.type === "another-peer") {
-        if (c.authorized) {
-          connectDataPeer(peer, data.peer, pass);
-        }
-      } else if (data.type === "name") {
-        connections[id].name = data.name;
-      }
+    c.on('open', function () {
+      c.on('data', function (data) {
+        readData(c, data);
+      });
+      c.send({type: "authorize", pass: pass});
     });
   }
 
   function createUserPeer() {
     let peer = new Peer({});
-    peer.on('open', function (id) {
-      updateStatus("接続を待機しています");
-    });
-    peer.on('connection', function (c) {
-      updateStatus("ID:" + c.peer + "が接続しました");
-
-      connections[c.peer] = c;
-      connections[c.peer].authorized = false;
-      propagateToConnections(c.peer);
-      c.on('data', function (data) {
-        console.log(data);
-        if (data.type === "authorize") {
-          if (data.pass === pass) {
-            connections[c.peer].authorized = true;
-            connections[c.peer].send({type: "authorize", pass: pass});
-            Object.values(connections).forEach(function (anotherconn) {
-              c.send({type: "another-peer", peer: anotherconn.peer});
-            });
-            shareScreenIfStarting(peer, c.peer, screen);
-            updateStatus("ID:" + c.peer + "は認証に成功しました");
-          } else {
-            updateStatus("ID:" + c.peer + "は認証に失敗しました");
-          }
-        } else if (data.type === "stop-sharing" || data.type === "close") {
-          stopSharing(data);
-        }
-      });
-    });
-
-    peer.on('disconnected', function () {
-      updateStatus("Disconnected");
-    });
-    peer.on('close', function () {
-      updateStatus("Closed");
-    });
-    peer.on('error', function (err) {
-      updateStatus("エラーが発生しました: " + err);
-      console.log(err);
-    });
 
     peer.on('call', function(call) {
-      call.answer();
+      call.answer(null);
       call.on('stream', function (screen) {
+        notifyMessage("ID:" + call.peer + "による画面共有");
         if (connections[call.peer].authorized) {
           addScreen(call.peer, screen);
         }
       });
     });
 
+    peer.on('open', function (id) {
+      notifyMessage("接続を待機しています");
+    });
+
+    peer.on('connection', function (c) {
+      notifyMessage("ID:" + c.peer + "が接続しました");
+
+      connections[c.peer] = c;
+      connections[c.peer].authorized = false;
+      c.on('data', function (data) {
+        readData(c, data);
+      });
+    });
+
+    peer.on('error', function (err) {
+      if (err.toString().search("addIceCandidate") === -1) {
+        notifyMessage("エラーが発生しました: " + err);
+      }
+      console.log(err);
+    });
+
     return peer;
   }
 
-  let sendIdElem = document.querySelector("#send-id");
-  let sendButtonElem = document.querySelector("#send-button");
+  //
+  // sharing events
+  //
+
   let startSharingElem = document.querySelector("#start-sharing");
   let stopElem = document.querySelector("#stop-sharing");
 
@@ -222,7 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
       pass = "";
     }
     if ('id' in query) {
-      connectDataPeer(peer, query.id, pass);
+      connectDataChannel(peer, query.id, pass);
     }
     displayRoomURL(peer.id, pass);
   });
@@ -233,9 +260,9 @@ document.addEventListener("DOMContentLoaded", function () {
     window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
     if (document.execCommand('copy')) {
-      updateStatus("コピーしました");
+      notifyMessage("コピーしました");
     } else {
-      updateStatus("コピーに失敗しました");
+      notifyMessage("コピーに失敗しました");
     }
     window.getSelection().removeAllRanges();
   });
