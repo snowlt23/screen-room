@@ -145,7 +145,9 @@ document.addEventListener("DOMContentLoaded", function () {
         stopSharing(data);
       } else if (data.type === "another-peer") {
         connectDataPeer(peer, data.peer, pass);
-        shareScreenIfStarting(peer, data.peer, screen);
+        if (c.authorized) {
+          shareScreenIfStarting(peer, data.peer, screen);
+        }
       } else if (data.type === "name") {
         connections[id].name = data.name;
       }
@@ -162,7 +164,6 @@ document.addEventListener("DOMContentLoaded", function () {
       Object.values(connections).forEach(function (anotherconn) {
         c.send({type: "another-peer", peer: anotherconn.peer});
       });
-      // shareScreenIfStarting(peer, c.peer, screen);
 
       connections[c.peer] = c;
       connections[c.peer].authorized = false;
