@@ -164,8 +164,11 @@ document.addEventListener("DOMContentLoaded", function () {
           delete dataqueue[c.peer];
         }
       } else {
+        c.send({type: "failed-authorize"});
         notifyMessage("ID:" + c.peer + "は認証に失敗しました");
       }
+    } else if (data.type === "failed-authorize") {
+      alert("接続先の認証に失敗しました");
     }
 
     // queueing when not authorized
@@ -214,7 +217,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     peer.on('connection', function (c) {
-      notifyMessage("ID:" + c.peer + "が接続しました");
+      // notifyMessage("ID:" + c.peer + "が接続しました");
 
       connections[c.peer] = c;
       connections[c.peer].authorized = false;
