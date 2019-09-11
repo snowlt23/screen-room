@@ -212,10 +212,6 @@ document.addEventListener("DOMContentLoaded", function () {
       call.answer(null);
       call.on('stream', function (screen) {
         readData(peer, call, {type: "screen-share", screen: screen});
-        // notifyMessage("ID:" + call.peer + "による画面共有");
-        // if (connections[call.peer].authorized) {
-        //   addScreen(call.peer, screen);
-        // }
       });
     });
 
