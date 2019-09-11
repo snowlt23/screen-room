@@ -306,4 +306,19 @@ document.addEventListener("DOMContentLoaded", function () {
     e.returnValue = '';
     removeScreen("own");
   });
+
+  //
+  // layout
+  //
+  
+  let layoutelem = document.querySelector("#layout");
+
+  layoutelem.addEventListener("change", function () {
+    let styles = {
+      "1column": "1fr",
+      "2column": "1fr 1fr",
+      "3column": "1fr 1fr 1fr"
+    };
+    screenselem.style["grid-template-columns"] = styles[layoutelem.value];
+  });
 });

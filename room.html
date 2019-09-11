@@ -57,11 +57,6 @@
     #screens video {
       width: 100%;
     }
-    @media (max-width: 960px){
-      #screens {
-        grid-template-columns: 1fr;
-      }
-    }
   </style>
 </head>
 
@@ -72,6 +67,12 @@
       <button id="copy-url">URLのコピー</button>
     </div>
     <div>
+      レイアウト:
+      <select id="layout">
+        <option value="1column">1カラム</option>
+        <option value="2column" selected>2カラム</option>
+        <option value="3column">3カラム</option>
+      </select>
       画質:
       <select id="quality">
         <option value="low">低</option>
