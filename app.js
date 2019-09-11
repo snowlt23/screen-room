@@ -145,26 +145,27 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
   
-  function readData(c, data) {
+  function readData(peer, c, data) {
     console.log(data);
 
     // authorize
     if (data.type === "authorize") {
-      if (c.authorized) return;
+      if (c.peer in connections && connections[c.peer].authorized) return;
       if (data.pass === pass) {
-        c.authorized = true;
-        c.send({type: "authorize", pass: pass});
+        // c.send({type: "authorize", pass: pass});
+        connectDataChannel(peer, c.peer, pass);
+        connections[c.peer].authorized = true;
         notifyMessage("ID:" + c.peer + "は認証に成功しました");
         propagateToConnections(c.peer);
         shareScreenIfStarting(peer, c.peer, screen);
         if (c.peer in dataqueue) {
           dataqueue[c.peer].forEach(data => {
-            readData(c, data);
+            readData(peer, c, data);
           });
           delete dataqueue[c.peer];
         }
       } else {
-        c.send({type: "failed-authorize"});
+        connections[c.peer].send({type: "failed-authorize"});
         notifyMessage("ID:" + c.peer + "は認証に失敗しました");
       }
     } else if (data.type === "failed-authorize") {
@@ -172,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // queueing when not authorized
-    if (!c.authorized) {
+    if (!(c.peer in connections) || !connections[c.peer].authorized) {
       if (!(c.peer in dataqueue)) dataqueue[c.peer] = [];
       dataqueue[c.peer].push(data);
       return;
@@ -188,12 +189,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function connectDataChannel(peer, id, pass) {
     if (peer.id === id) return;
-    if (id in connections) return;
+    if (id in connections) {
+      if (connections[id].authorized) {
+        return;
+      }
+    }
     let c = peer.connect(id, {reliable: true});
     connections[id] = c;
+    c.authorized = false;
     c.on('open', function () {
       c.on('data', function (data) {
-        readData(c, data);
+        readData(peer, c, data);
       });
       c.send({type: "authorize", pass: pass});
     });
@@ -217,12 +223,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     peer.on('connection', function (c) {
-      // notifyMessage("ID:" + c.peer + "が接続しました");
-
-      connections[c.peer] = c;
-      connections[c.peer].authorized = false;
       c.on('data', function (data) {
-        readData(c, data);
+        readData(peer, c, data);
       });
     });
 
