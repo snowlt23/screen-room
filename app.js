@@ -165,11 +165,8 @@ document.addEventListener("DOMContentLoaded", function () {
           delete dataqueue[c.peer];
         }
       } else {
-        connections[c.peer].send({type: "failed-authorize"});
         notifyMessage("ID:" + c.peer + "は認証に失敗しました");
       }
-    } else if (data.type === "failed-authorize") {
-      alert("接続先の認証に失敗しました");
     }
 
     // queueing when not authorized
