@@ -181,6 +181,9 @@ document.addEventListener("DOMContentLoaded", function () {
       stopSharing(data);
     } else if (data.type === "another-peer") {
       connectDataChannel(peer, data.peer, pass);
+    } else if (data.type === "screen-share") {
+      notifyMessage("ID:" + c.peer + "による画面共有");
+      addScreen(c.peer, data.screen);
     }
   }
 
@@ -208,10 +211,11 @@ document.addEventListener("DOMContentLoaded", function () {
     peer.on('call', function(call) {
       call.answer(null);
       call.on('stream', function (screen) {
-        notifyMessage("ID:" + call.peer + "による画面共有");
-        if (connections[call.peer].authorized) {
-          addScreen(call.peer, screen);
-        }
+        readData(peer, call, {type: "screen-share", screen: screen});
+        // notifyMessage("ID:" + call.peer + "による画面共有");
+        // if (connections[call.peer].authorized) {
+        //   addScreen(call.peer, screen);
+        // }
       });
     });
 
