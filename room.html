@@ -57,29 +57,42 @@
     #screens video {
       width: 100%;
     }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 2px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
   </style>
 </head>
 
 <body>
   <div id="room-menu">
-    <div>
-      <span id="room-url"></span>
-      <button id="copy-url">URLのコピー</button>
+    <div style="width: 50%;">
+      <span id="room-url" style="width: 70%; white-space: nowrap; overflow: auto;"></span>
+      <button id="copy-url" style="width: 30%;">URLのコピー</button>
     </div>
     <div>
-      レイアウト:
       <select id="layout">
-        <option value="1column">1カラム</option>
-        <option value="2column" selected>2カラム</option>
-        <option value="3column">3カラム</option>
+        <option value="1column">1列</option>
+        <option value="2column" selected>2列</option>
+        <option value="3column">3列</option>
       </select>
-      画質:
+      画質
       <select id="quality">
         <option value="low">低</option>
         <option value="mid" selected>中</option>
         <option value="high">高</option>
       </select>
-      FPS:
+      FPS
       <select id="fps">
         <option value="10">10</option>
         <option value="15" selected>15</option>
@@ -87,7 +100,7 @@
         <option value="30">30</option>
       </select>
       <button id="start-sharing">画面共有を開始</button>
-      <button id="stop-sharing">画面共有を停止</button>
+      <button id="stop-sharing" style="display: none">画面共有を停止</button>
     </div>
   </div>
   <div id="messages">

@@ -272,6 +272,9 @@ document.addEventListener("DOMContentLoaded", function () {
   startSharingElem.addEventListener("click", function (e) {
     if (screen === null) {
       getScreen().then(function (scr) {
+        startSharingElem.style.display = "none";
+        stopElem.style.display = "block";
+
         screen = scr;
         addScreen("own", screen);
         shareScreenToConnections(peer, screen);
@@ -281,6 +284,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!screen.active) {
       getScreen().then(function (scr) {
+        startSharingElem.style.display = "none";
+        stopElem.style.display = "block";
+
         screen = scr;
         addScreen("own", screen);
         shareScreenToConnections(peer, screen);
@@ -297,6 +303,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     removeScreen("own");
     screen = null;
+    startSharingElem.style.display = "block";
+    stopElem.style.display = "none";
   });
   window.addEventListener("beforeunload", function (e) {
     Object.values(connections).forEach(function (c) {
