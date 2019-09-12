@@ -79,6 +79,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   function removeScreen(id) {
     if (id in screens) {
+      notifyMessage("ID:" + id + "が画面共有を停止しました");
       let tracks = screens[id].srcObject.getTracks();
       tracks.forEach(track => track.stop());
       screenselem.removeChild(screens[id]);
@@ -93,6 +94,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let messageelem = document.querySelector("#messages");
 
   function notifyMessage(s) {
+    console.log("[screen-room] " + s);
     let msg = document.createElement("p");
     msg.innerText = s;
     messageelem.appendChild(msg);
@@ -123,6 +125,14 @@ document.addEventListener("DOMContentLoaded", function () {
     Object.values(connections).forEach(function (c) {
       if (c.authorized) {
         peer.call(c.peer, screen);
+      }
+    });
+  }
+
+  function removeStoppedScreen() {
+    Object.values(connections).forEach(function (c) {
+      if (c.peer in screens && !screens[c.peer].srcObject.active) {
+        removeScreen(c.peer);
       }
     });
   }
@@ -182,7 +192,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } else if (data.type === "another-peer") {
       connectDataChannel(peer, data.peer, pass);
     } else if (data.type === "screen-share") {
-      notifyMessage("ID:" + c.peer + "による画面共有");
+      notifyMessage("ID:" + c.peer + "が画面共有を開始しました");
       addScreen(c.peer, data.screen);
     }
   }
@@ -314,6 +324,12 @@ document.addEventListener("DOMContentLoaded", function () {
     e.returnValue = '';
     removeScreen("own");
   });
+
+  function loopCheckerForStoppedScreen() {
+    removeStoppedScreen();
+    setTimeout(loopCheckerForStoppedScreen, 5000);
+  }
+  loopCheckerForStoppedScreen();
 
   //
   // layout
